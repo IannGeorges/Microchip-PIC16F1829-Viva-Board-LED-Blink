@@ -1,0 +1,109 @@
+;Lab 2 Blink LED with Timer Loop Delay
+;Iann Akoulouze Bika
+;Dr.Morton
+    
+; PIC16F1829 Configuration Bit Settings
+; Assembly source line config statements
+
+#include "p16f1829.inc"
+
+; CONFIG1
+; __config 0xC9E4
+ __CONFIG _CONFIG1, _FOSC_INTOSC & _WDTE_OFF & _PWRTE_OFF & _MCLRE_ON & _CP_OFF & _CPD_OFF & _BOREN_OFF & _CLKOUTEN_OFF & _IESO_OFF & _FCMEN_OFF
+; CONFIG2
+; __config 0xFEFF
+ __CONFIG _CONFIG2, _WRT_OFF & _PLLEN_OFF & _STVREN_ON & _BORV_LO & _LVP_ON
+    
+    list p = 16F1829, R = DEC
+    CBLOCK 0x30    
+VarA
+VarB
+    
+    ENDC
+    
+;Start Setup  
+    ORG 0
+    goto Start
+    
+    
+    
+    RETFIE
+    
+    
+    
+Start    
+;Clock Setup
+    BANKSEL OSCCON
+    movlw 0x6A
+    movwf OSCCON
+;Port Setup
+     ;Configure all of TRISA to be output
+    BANKSEL 	TRISA  	 	
+    clrf    	TRISA
+    ;Set all LATCH A outputs to 0
+    BANKSEL	LATA
+    clrf	LATA
+    ;Configure Push Button as Input
+    BANKSEL	TRISB
+    bsf		TRISB, 7
+    ;Configure Push Input as Digital
+    BANKSEL	ANSELB
+    bcf		ANSELB, 7
+    ;Configure Option Registor for TMR0
+    BANKSEL	OPTION_REG
+    movlw	0x87
+    movwf	OPTION_REG
+    BANKSEL TRISB
+    bsf TRISB, 7
+    BANKSEL ANSELC
+    bcf ANSELC, 2    
+    BANKSEL OPTION_REG
+    MOVLW 0x87 ;1000 0111
+    MOVWF OPTION_REG
+    
+Loop
+    BANKSEL PORTB
+    btfss   PORTB, 7
+    bra	    Loop
+    BANKSEL LATA
+    bsf	    LATA,5
+    call Delay2
+    btfss   PORTB, 7
+    bra	    Loop
+    BANKSEL LATA
+    bcf	    LATA,5
+    call Delay2
+    goto Loop
+ 
+ ;Delay Routine
+ 
+Delay
+    BANKSEL VarA
+    movlw 0xFF
+    movwf VarA
+Outside
+    decfsz VarA
+    goto Goon
+    return
+Goon
+    movlw 0xFF
+    movwf VarB
+Inside
+    decfsz VarB
+    goto Inside
+    goto Outside
+    
+Delay2
+	BANKSEL INTCON
+	BCF INTCON, 2
+	BANKSEL TMR0
+	MOVLW 0x01
+	MOVWF TMR0
+	BANKSEL INTCON
+Tloop
+	BTFSC INTCON, 2
+	RETURN
+	goto Tloop
+	
+    
+END	
